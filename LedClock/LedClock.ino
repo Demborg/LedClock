@@ -14,8 +14,20 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(144, STRIP, NEO_GRB + NEO_KHZ800);
 // DS3231 RTC unit
 RTC_DS3231 rtc;
 
+// Connect the HC-06 TX to the Arduino RX on pin 2. 
+// Connect the HC-06 RX to the Arduino TX on pin 3 through a voltage divider.
+#include <SoftwareSerial.h>
+SoftwareSerial BTserial(2, 3); // RX | TX
+
+
+//Variable for indicating state of the system
+bool state = true;
+
 void setup() {
   Serial.begin(9600);
+
+  // HC-06 default serial speed is 9600
+  BTserial.begin(9600);  
 
   delay(3000); // wait for console opening
 
@@ -36,38 +48,68 @@ void setup() {
   // start the strip up blank
   strip.begin();
   strip.show();
+
 }
 
 void loop() {
-  // get the current time
-  DateTime now = rtc.now();
 
   //Clear the strip
-  clearStrip();
+  fillStrip(strip.Color(0,0,0));
 
-  //Paint the markers for full hours 0 to 23
-  for(int i = 0;i < strip.numPixels(); i++){
-    if(i%6==0){
-      strip.setPixelColor(i,strip.Color(128,0,0));
+  if(Serial.available()){
+    Serial.print("hej");
+    while(Serial.available()){
+      Serial.read();
     }
+    state = !state;
   }
 
-  //Paint current hour green
-  strip.setPixelColor(now.hour()*6,strip.Color(0,255,0));
+  if(state){
+    showTime();
+  }
+  else{
+    party();
+  }
 
-  //Paint current minute blue
-  int minutePixel = (int)((now.minute()*60+now.second())/25+0.5);
-  strip.setPixelColor(minutePixel,strip.Color(0,0,255));
 
   strip.show();
 
   delay(500);
 }
 
-void clearStrip(){
+void fillStrip(uint32_t color){
   for(int i = 0;i < strip.numPixels(); i++){
-    strip.setPixelColor(i,strip.Color(0,0,0));
+    strip.setPixelColor(i,color);
   }
 }
 
+void showTime(){
+  // get the current time
+  DateTime now = rtc.now();
+  
+  //Paint the markers for full hours 0 to 23
+  for(int i = 0;i < strip.numPixels(); i++){
+    if(i%12 == 0){
+      strip.setPixelColor(i,strip.Color(64,0,0));
+    }
+    else if(i%6 == 0){
+      strip.setPixelColor(i,strip.Color(64,0,0));
+    }
+  }
+
+  //Paint current hour green
+  int hourPixel = (int)((now.hour()*60+now.minute())/10+0.5);
+  strip.setPixelColor(hourPixel,strip.Color(0,255,0));
+
+  //Paint current minute blue
+  int minutePixel = (int)((now.minute()*60+now.second())/25+0.5);
+  strip.setPixelColor(minutePixel,strip.Color(0,0,255));  
+}
+
+void party(){
+  fillStrip(strip.Color(128,128,128));
+  strip.show();
+  delay(50);
+  fillStrip(strip.Color(0,0,0));
+}
 

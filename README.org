@@ -1,4 +1,4 @@
 #+TITLE: Yet an other LED-strip clock
 #+AUTHOR: Axel Demborg
 
-This is code for a clock I built using a strip of 144 /ws2812b/ (neopixel) LEDs. Time is kept using a DS3231 RTC module and the code is run on a arduino uno. 
+This is code for a clock I built using a strip of 144 /ws2812b/ (neopixel) LEDs. Time is kept using a DS3231 RTC module and the code is run on an arduino uno. 
