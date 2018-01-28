@@ -21,7 +21,7 @@ SoftwareSerial BTserial(2, 3); // RX | TX
 
 
 //Variable for indicating state of the system
-bool state = true;
+char state = 'c'; //c means clock
 
 //Scaling for brightness
 int scale = 1;
@@ -62,13 +62,20 @@ void loop() {
   if (BTserial.available()) {
     while (BTserial.available()) {
       char ch = BTserial.read();
-      if(ch <= '9' && ch >= '0'){
+      if(ch == '?'){
+        BTserial.println("Welcome! A number from 0 to 9 is taken as the intensity for the system and letters correspond to differnt lighting options");
+        BTserial.println("'c' = clock");
+        BTserial.println("'s' = strobe");
+        BTserial.println("'h' = warm white");
+        BTserial.println("'w' or anything else = white");
+      }
+      else if(ch <= '9' && ch >= '0'){
         scale = 10 - ch + '0' ;
         BTserial.println("Brightness set");
       }
       else{
-        state = !state;
-        BTserial.println("State toggled");
+        state = ch;
+        BTserial.println("State changed");
       }
       Serial.println("Here comes some debug stuff");
       Serial.println(ch);
@@ -77,11 +84,17 @@ void loop() {
     }
   }
 
-  if (state) {
+  if (state == 'c') {
     showTime();
   }
-  else {
-    party();
+  else if (state == 's') {
+    strobe();
+  }
+  else if (state == 'h'){
+    fillStrip(strip.Color(200,120,12));
+  }
+  else{
+    fillStrip(strip.Color(128/scale,128/scale,128/scale));
   }
 
 
@@ -119,10 +132,10 @@ void showTime() {
   strip.setPixelColor(minutePixel, strip.Color(0, 0, 255/scale));
 }
 
-void party() {
+void strobe() {
   fillStrip(strip.Color(128/scale, 128/scale, 128/scale));
   strip.show();
-  delay(50);
+  delay(10);
   fillStrip(strip.Color(0, 0, 0));
 }
 
