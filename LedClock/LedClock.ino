@@ -23,6 +23,9 @@ SoftwareSerial BTserial(2, 3); // RX | TX
 //Variable for indicating state of the system
 bool state = true;
 
+//Scaling for brightness
+int scale = 1;
+
 void setup() {
   Serial.begin(9600);
 
@@ -57,11 +60,21 @@ void loop() {
   fillStrip(strip.Color(0, 0, 0));
 
   if (BTserial.available()) {
-    BTserial.print("Toggleing state!");
     while (BTserial.available()) {
-      BTserial.read();
+      char ch = BTserial.read();
+      if(ch <= '9' && ch >= '0'){
+        scale = 10 - ch + '0' ;
+        BTserial.println("Brightness set");
+      }
+      else{
+        state = !state;
+        BTserial.println("State toggled");
+      }
+      Serial.println("Here comes some debug stuff");
+      Serial.println(ch);
+      Serial.println(state);
+      Serial.println(scale);
     }
-    state = !state;
   }
 
   if (state) {
@@ -90,24 +103,24 @@ void showTime() {
   //Paint the markers for full hours 0 to 23
   for (int i = 0; i < strip.numPixels(); i++) {
     if (i % 12 == 0) {
-      strip.setPixelColor(i, strip.Color(64, 0, 0));
+      strip.setPixelColor(i, strip.Color(64/scale, 0, 0));
     }
     else if (i % 6 == 0) {
-      strip.setPixelColor(i, strip.Color(64, 0, 0));
+      strip.setPixelColor(i, strip.Color(64/scale, 0, 0));
     }
   }
 
   //Paint current hour green
   int hourPixel = (int)((now.hour() * 60 + now.minute()) / 10 + 0.5);
-  strip.setPixelColor(hourPixel, strip.Color(0, 255, 0));
+  strip.setPixelColor(hourPixel, strip.Color(0, 255/scale, 0));
 
   //Paint current minute blue
   int minutePixel = (int)((now.minute() * 60 + now.second()) / 25 + 0.5);
-  strip.setPixelColor(minutePixel, strip.Color(0, 0, 255));
+  strip.setPixelColor(minutePixel, strip.Color(0, 0, 255/scale));
 }
 
 void party() {
-  fillStrip(strip.Color(128, 128, 128));
+  fillStrip(strip.Color(128/scale, 128/scale, 128/scale));
   strip.show();
   delay(50);
   fillStrip(strip.Color(0, 0, 0));
