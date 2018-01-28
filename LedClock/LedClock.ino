@@ -23,8 +23,12 @@ SoftwareSerial BTserial(2, 3); // RX | TX
 //Variable for indicating state of the system
 char state = 'c'; //c means clock
 
-//Scaling for brightness
-int scale = 1;
+//Variables for colors
+uint32_t bgColor = strip.Color(0,0,0); //bg or solid/strobe color
+uint32_t eColor = strip.Color(32,0,0); //colors for even ticks, odd ticks, minutes and hours
+uint32_t oColor = strip.Color(32,0,32);
+uint32_t mColor = strip.Color(0,0,255);
+uint32_t hColor = strip.Color(0,255,0);
 
 void setup() {
   Serial.begin(9600);
@@ -57,22 +61,41 @@ void setup() {
 void loop() {
 
   //Clear the strip
-  fillStrip(strip.Color(0, 0, 0));
+  fillStrip(bgColor);
 
   if (BTserial.available()) {
     while (BTserial.available()) {
       char ch = BTserial.read();
       if(ch == '?'){
-        BTserial.println("Welcome! A number from 0 to 9 is taken as the intensity for the system and letters correspond to differnt lighting options");
+        BTserial.println("Welcome! Letters correspond to differnt lighting options");
         BTserial.println("'c' = clock");
-        BTserial.println("'s' = strobe");
-        BTserial.println("'h' = warm white");
-        BTserial.println("'o' = off");
-        BTserial.println("'w' or anything else = white");
+        BTserial.println("'b' = blink");
+        BTserial.println("'s' = solid");
+        BTserial.println("'gxxx' sets the background color where x is a number 0-9 and corresponds to the intensity of r, g and b");
+        BTserial.println("'exxx' sets the color of even ticks");
+        BTserial.println("'oxxx' sets the color of odd ticks");
+        BTserial.println("'mxxx' sets the color of minute");
+        BTserial.println("'mxxx' sets the color of hour");
       }
-      else if(ch <= '9' && ch >= '0'){
-        scale = 10 - ch + '0' ;
-        BTserial.println("Brightness set");
+      else if(ch == 'g'){
+        bgColor = getColor();
+        BTserial.println("background color set");
+      }
+      else if(ch == 'e'){
+        eColor = getColor();
+        BTserial.println("even tick color set");
+      }
+      else if(ch == 'o'){
+        oColor = getColor();
+        BTserial.println("odd tick color set");
+      }
+      else if(ch == 'm'){
+        mColor = getColor();
+        BTserial.println("minute color set");
+      }
+      else if(ch == 'h'){
+        hColor = getColor();
+        BTserial.println("hour color set");
       }
       else{
         state = ch;
@@ -81,24 +104,17 @@ void loop() {
       Serial.println("Here comes some debug stuff");
       Serial.println(ch);
       Serial.println(state);
-      Serial.println(scale);
     }
   }
 
   if (state == 'c') {
     showTime();
   }
-  else if (state == 's') {
-    strobe();
-  }
-  else if (state == 'h'){
-    fillStrip(strip.Color(200,120,12));
-  }
-  else if (state = "o"){
-    fillStrip(strip.Color(0,0,0));
+  else if (state == 'b') {
+    strobe(bgColor);
   }
   else{
-    fillStrip(strip.Color(128/scale,128/scale,128/scale));
+    fillStrip(bgColor);
   }
 
 
@@ -120,26 +136,42 @@ void showTime() {
   //Paint the markers for full hours 0 to 23
   for (int i = 0; i < strip.numPixels(); i++) {
     if (i % 12 == 0) {
-      strip.setPixelColor(i, strip.Color(64/scale, 0, 0));
+      strip.setPixelColor(i, oColor);
     }
     else if (i % 6 == 0) {
-      strip.setPixelColor(i, strip.Color(64/scale, 0, 0));
+      strip.setPixelColor(i, eColor);
     }
   }
 
   //Paint current hour green
   int hourPixel = (int)((now.hour() * 60 + now.minute()) / 10 + 0.5);
-  strip.setPixelColor(hourPixel, strip.Color(0, 255/scale, 0));
+  strip.setPixelColor(hourPixel, hColor);
 
   //Paint current minute blue
   int minutePixel = (int)((now.minute() * 60 + now.second()) / 25 + 0.5);
-  strip.setPixelColor(minutePixel, strip.Color(0, 0, 255/scale));
+  strip.setPixelColor(minutePixel, mColor);
 }
 
-void strobe() {
-  fillStrip(strip.Color(128/scale, 128/scale, 128/scale));
+void strobe(uint32_t c) {
+  fillStrip(c);
   strip.show();
-  delay(10);
+  delay(1);
   fillStrip(strip.Color(0, 0, 0));
+}
+
+uint32_t getColor(){
+  int r = (BTserial.read() - '0')*28;
+  int g = (BTserial.read() - '0')*28;
+  int b = (BTserial.read() - '0')*28;
+
+  //Protection against drawing to much power
+  if(r+g+b > 400){
+    BTserial.println("To high values, protecting");
+    r /= (r+g+b)/400.0;
+    g /= (r+g+b)/400.0;
+    b /= (r+g+b)/400.0;
+  }
+
+  return strip.Color(r,g,b);
 }
 
