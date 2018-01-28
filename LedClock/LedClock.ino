@@ -67,6 +67,7 @@ void loop() {
         BTserial.println("'c' = clock");
         BTserial.println("'s' = strobe");
         BTserial.println("'h' = warm white");
+        BTserial.println("'o' = off");
         BTserial.println("'w' or anything else = white");
       }
       else if(ch <= '9' && ch >= '0'){
@@ -92,6 +93,9 @@ void loop() {
   }
   else if (state == 'h'){
     fillStrip(strip.Color(200,120,12));
+  }
+  else if (state = "o"){
+    fillStrip(strip.Color(0,0,0));
   }
   else{
     fillStrip(strip.Color(128/scale,128/scale,128/scale));
