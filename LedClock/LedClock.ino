@@ -22,13 +22,16 @@ SoftwareSerial BTserial(2, 3); // RX | TX
 
 //Variable for indicating state of the system
 char state = 'c'; //c means clock
+int wHour = -1; //hour to wake
+int wMinute = -1; //minute to wake
 
 //Variables for colors
 uint32_t bgColor = strip.Color(0,0,0); //bg or solid/strobe color
 uint32_t eColor = strip.Color(32,0,0); //colors for even ticks, odd ticks, minutes and hours
-uint32_t oColor = strip.Color(32,0,32);
+uint32_t oColor = strip.Color(32,0,0);
 uint32_t mColor = strip.Color(0,0,255);
 uint32_t hColor = strip.Color(0,255,0);
+uint32_t wColor = strip.Color(255,255,0); //wake up indicator
 
 void setup() {
   Serial.begin(9600);
@@ -71,11 +74,15 @@ void loop() {
         BTserial.println("'c' = clock");
         BTserial.println("'b' = blink");
         BTserial.println("'s' = solid");
+        BTserial.println("The clock can wake you upp at a given time");
+        BTserial.println("'ahhmm' sets the alarm for hh:mm and starts turning the lights on 30 minutes before. 'a....' turns the alarm function off");
+        BTserial.println("The colors of the clock can be fully customized to your liking");
         BTserial.println("'gxxx' sets the background color where x is a number 0-9 and corresponds to the intensity of r, g and b");
         BTserial.println("'exxx' sets the color of even ticks");
         BTserial.println("'oxxx' sets the color of odd ticks");
         BTserial.println("'mxxx' sets the color of minute");
         BTserial.println("'mxxx' sets the color of hour");
+        BTserial.println("'wxxx' sets the color of wake indicator");
       }
       else if(ch == 'g'){
         bgColor = getColor();
@@ -97,6 +104,15 @@ void loop() {
         hColor = getColor();
         BTserial.println("hour color set");
       }
+      else if(ch == 'w'){
+        wColor = getColor();
+        BTserial.println("wake color set");
+      }
+      else if(ch == 'a'){
+        wHour = (BTserial.read()-'0')*10 + BTserial.read()-'0';
+        wMinute = (BTserial.read()-'0')*10 + BTserial.read()-'0';
+        BTserial.println("alarm set");
+      }
       else{
         state = ch;
         BTserial.println("State changed");
@@ -105,6 +121,12 @@ void loop() {
       Serial.println(ch);
       Serial.println(state);
     }
+    //Stuff for alarm light
+    DateTime now = rtc.now();
+    if(now.hour() == wHour && now.minute() == wMinute){
+      bgColor = strip.Color(128,70,20);
+    }
+    
   }
 
   if (state == 'c') {
@@ -135,11 +157,11 @@ void showTime() {
 
   //Paint the markers for full hours 0 to 23
   for (int i = 0; i < strip.numPixels(); i++) {
-    if (i % 12 == 0) {
-      strip.setPixelColor(i, oColor);
-    }
-    else if (i % 6 == 0) {
+    if (i % 12 == 11) {
       strip.setPixelColor(i, eColor);
+    }
+    else if (i % 6 == 5) {
+      strip.setPixelColor(i, oColor);
     }
   }
 
@@ -150,6 +172,12 @@ void showTime() {
   //Paint current minute blue
   int minutePixel = (int)((now.minute() * 60 + now.second()) / 25 + 0.5);
   strip.setPixelColor(minutePixel, mColor);
+
+  //If alarm set paint that
+  if(wHour >= 0){
+    int hourPixel = (int)((wHour * 60 + wMinute) / 10 + 0.5);
+    strip.setPixelColor(hourPixel, wColor);
+  }
 }
 
 void strobe(uint32_t c) {
