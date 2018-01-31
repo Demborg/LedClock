@@ -120,12 +120,14 @@ void loop() {
       Serial.println("Here comes some debug stuff");
       Serial.println(ch);
       Serial.println(state);
+      Serial.println(wHour);
+      Serial.println(wMinute);
     }
-    //Stuff for alarm light
-    DateTime now = rtc.now();
-    if(now.hour() == wHour && now.minute() == wMinute){
-      bgColor = strip.Color(128,70,20);
-    }
+  }
+  //Stuff for alarm light
+  DateTime now = rtc.now();
+  if(now.hour() == wHour && now.minute() == wMinute){
+    bgColor = wColor;
     
   }
 
@@ -188,10 +190,10 @@ void strobe(uint32_t c) {
 }
 
 uint32_t getColor(){
-  int r = (BTserial.read() - '0')*28;
-  int g = (BTserial.read() - '0')*28;
-  int b = (BTserial.read() - '0')*28;
-
+  int r = (int)(pow(BTserial.read()-'0',2)*3);//(BTserial.read() - '0')*28; 
+  int g = (int)(pow(BTserial.read()-'0',2)*3);//(BTserial.read() - '0')*28; 
+  int b = (int)(pow(BTserial.read()-'0',2)*3);//(BTserial.read() - '0')*28; 
+  
   //Protection against drawing to much power
   if(r+g+b > 400){
     BTserial.println("To high values, protecting");
@@ -202,4 +204,3 @@ uint32_t getColor(){
 
   return strip.Color(r,g,b);
 }
-
